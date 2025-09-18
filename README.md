@@ -1,12 +1,3 @@
-# Project Moved
-
-This repository is no longer maintained.  
-The project has been ported and future development continues here: 
-[New Repository Link](https://github.com/sasank-pankam/ARC)
-
-This repo will remain available for reference but will not receive further updates.
-
-
 # Root Cause Detector
 
 ## What is this application?
