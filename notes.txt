@@ -1,3 +1,20 @@
+2025-09-19 improvements:
+        1. eliminating service graph, create graph between alerts instead of services.
+           read about how we can build such graph with preprocessing. get a large dataset of alerts of a real deployment.
+
+2025-09-19 refinements:
+        1. instead of splitting into batches and then groups which limits the parent and child to be 1
+           maintain a global pool of links and register the root, if root notification ticked then calculate the graph on the fly.
+        2. the crud on a alert group must be refined, as the idea getting changed to maintaining a global links
+           now if a alert state changes to "resolved" we need to remove the alert and all its connected links[to or from]
+           must be deleted. this makes some of the alerts to be root alerts[no incomming edge] so register as root and 
+           wait for further updates if that alert is resolved then cancel that notification and make its children as root this makes a cascading effect.
+        3. preprocessing the time based splitting cannot work on streamed data as the the alerts are contineous
+           so a better approch is requeired.
+
+2025-09-19 fixes:
+        1. currently the alertmanager structure is not supported the csv must be aligned with alertmanager input.
+
 1. http ingress web 400 hadle the exception, give out error. (done)
 2. split the payload in the sender into multiple chunks and process the data. (done)
 3. log links to a files also. (done)
