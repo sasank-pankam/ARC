@@ -1,52 +1,43 @@
 nodes:
   - id: 1
-    service: database
-    children: [3, 4, 6, 5, 6, 7, 8, 9, 10, 11, 12]
-    parents: []
-
-  - id: 2
-    service: backend
+    service: sv1
     children: []
-    parents: [3, 4, 6, 5, 6, 7, 8, 9, 10, 11, 12]
-
+    parents: []
+  - id: 2
+    service: sv2
+    children: [1]
+    parents: []
   - id: 3
-    service: decision-tree
-    children: [2]
+    service: sv3
+    children: []
     parents: [1]
-
   - id: 4
-    service: gaussian-naive-bayes
-    children: [2]
+    service: sv4
+    children: []
     parents: [1]
   - id: 5
-    service: gradient-boost
-    children: [2]
-    parents: [1]
+    service: sv5
+    children: []
+    parents: []
+  # Isolated services
+
   - id: 6
-    service: knn
-    children: [2]
-    parents: [1]
+    service: analytics-service
+    children: []
+    parents: []
   - id: 7
-    service: logistic-regression
-    children: [2]
-    parents: [1]
+    service: email-service
+    children: []
+    parents: []
   - id: 8
-    service: multilayer-perceptron
-    children: [2]
-    parents: [1]
+    service: chatbot-service
+    children: []
+    parents: []
   - id: 9
-    service: multinominal-naive-bayes
-    children: [2]
-    parents: [1]
+    service: logging-service
+    children: []
+    parents: []
   - id: 10
-    service: random-forest
-    children: [2]
-    parents: [1]
-  - id: 11
-    service: support-vector-machine
-    children: [2]
-    parents: [1]
-  - id: 12
-    service: xgboost
-    children: [2]
-    parents: [1]
+    service: monitoring-service
+    children: []
+    parents: []

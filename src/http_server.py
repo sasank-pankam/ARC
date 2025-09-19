@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Callable
+
 from src.models import FeedBack
 from src.notifier.__ws_notifier import WsNotifier
 from . import log

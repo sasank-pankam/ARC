@@ -7,10 +7,13 @@ polling:
 
 detector:
   batch_gap_threshold: 15
-  time_delta: 3
+  time_delta: 5
   confidence_threshold: 0.2
 
   initial_alpha: 1
   initial_beta: 1
 
   delay: 5
+
+historic_data:
+  path: "./test_data/alerts.csv"

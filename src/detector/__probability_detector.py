@@ -1,6 +1,6 @@
 import asyncio
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 from src.models import AlertGroup, FeedBack
@@ -11,6 +11,8 @@ from src.graph import BaseGraph
 from src.notifier import BaseNotifier
 from src.models import Alert
 from src.config import cfg
+
+td = timedelta(minutes=cfg.detector.time_delta)
 
 
 class AlertBatch:
@@ -41,11 +43,7 @@ class AlertBatch:
 
     def check_temporal(self, alert: Alert):
         if self.lower_bound:
-            if not (
-                self.lower_bound - cfg.detector.time_delta
-                <= alert.startsAt
-                <= self.upper_bound + cfg.detector.time_delta
-            ):
+            if not (self.lower_bound - td <= alert.startsAt <= self.upper_bound + td):
                 return False
         return True
 
@@ -142,7 +140,7 @@ class AlertBatch:
             log.debug(f"Child: {decision=}, {strength=} for ({alert.id}, {child})")
 
             if decision:
-                if best_strenght <= strength:
+                if best_strenght < strength:
                     best_strenght = strength
                     best_child = child
                 have_poked_a_child = True
@@ -155,7 +153,7 @@ class AlertBatch:
             log.debug(f"Parent: {decision=}, {strength=} for ({parent}, {alert.id})")
             if decision:
                 have_poked_a_parent = True
-                if best_strenght <= strength:
+                if best_strenght < strength:
                     best_strenght = strength
                     best_parent = parent
 
@@ -188,7 +186,6 @@ class AlertBatch:
             child_grp: AlertGroup = c_alert.group
 
             log.debug(f"connecting {c_alert.id} to {p_alert.id}")
-            # print(">>>>>>>>>>> ", id(parent_grp))
 
             for c_al in child_grp.group:  # convert the childs group to this group
                 parent_grp.add_other(c_al)
@@ -209,7 +206,6 @@ class AlertBatch:
                 tsk.cancel()
 
             grp = c_alert.group
-            # print(">>>>>>>>>>> ", id(grp))
             alert.group = grp
             c_alert.parent_id = alert.id
 
@@ -221,17 +217,16 @@ class AlertBatch:
             log.debug(f"the best alert parent for the {alert.id} is {best_parent}")
             p_alert, _ = await self.store.get(best_parent)
             grp: AlertGroup = p_alert.group
-            # print(">>>>>>>>>>> ", id(grp))
 
             alert.group = grp
             alert.parent_id = p_alert.id
+            print(alert.id, alert)
             grp.add_other(alert)
         else:
             # assuming no child and no parent
             # create a new group
             log.debug("found no child and parent with strong enough link.")
             new_grp = AlertGroup(alert)
-            # print(">>>>>>>>>>> ", id(new_grp))
 
             alert.group = new_grp
             self.groups.append(new_grp)
@@ -245,7 +240,7 @@ class AlertBatch:
                 continue
 
             _, other_strenght = await self.get_strength(a, b)
-            if curr_strength <= other_strenght:
+            if curr_strength < other_strenght:
                 return True
 
         return False
@@ -267,7 +262,6 @@ class AlertBatch:
             (cfg.detector.initial_alpha, cfg.detector.initial_beta),
         )
         total = (await self.store.get(child_id))[1]
-        # print(alpha, beta_)
 
         strength = alpha / total
 

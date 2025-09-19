@@ -1,8 +1,7 @@
-from datetime import timedelta
 from pathlib import Path
-import sys
-from attr import dataclass
-import yaml
+import argparse
+from dataclasses import dataclass, field
+from omegaconf import OmegaConf
 
 
 @dataclass
@@ -15,8 +14,8 @@ class Polling:
 
 @dataclass
 class Detector:
-    batch_gap_threshold: timedelta = timedelta(minutes=15)
-    time_delta: timedelta = timedelta(minutes=3)
+    batch_gap_threshold: int = 15
+    time_delta: int = 5
     confidence_threshold: float = 0.2
 
     initial_alpha: int = 1
@@ -38,43 +37,48 @@ class Store:
 
 @dataclass
 class ServiceGraph:
-    path: str = "test_data/test_service_map.yaml"
+    path: Path = Path("service_dependancy_map.yaml")
 
 
 @dataclass
 class HistoricData:
-    path: Path = Path("test_data/data")
+    path: Path = Path()
+
+
+@dataclass
+class Output:
+    emit_links: bool = False
 
 
 @dataclass
 class AppConfig:
-    polling: Polling
-    detector: Detector
-    server: Server
-    store: Store
-    historic_data: HistoricData
-    service_graph: ServiceGraph
+    polling: Polling = field(default_factory=Polling)
+    detector: Detector = field(default_factory=Detector)
+    server: Server = field(default_factory=Server)
+    store: Store = field(default_factory=Store)
+    historic_data: HistoricData = field(default_factory=HistoricData)
+    service_graph: ServiceGraph = field(default_factory=ServiceGraph)
+    output: Output = field(default_factory=Output)
 
 
 def load_config(path: str) -> AppConfig:
-    with open(path, "r") as f:
-        raw = yaml.safe_load(f)
+    conf_path = Path(path)
 
-    raw["detector"]["time_delta"] = timedelta(minutes=raw["detector"]["time_delta"])
-    raw["detector"]["batch_gap_threshold"] = timedelta(
-        minutes=raw["detector"]["batch_gap_threshold"]
-    )
+    cfg = OmegaConf.structured(AppConfig)
 
-    return AppConfig(
-        detector=Detector(**raw["detector"]),
-        polling=Polling(**raw["polling"]),
-        server=Server(**raw["server"]),
-        store=Store(),
-        historic_data=HistoricData(),
-        service_graph=ServiceGraph(),
-    )
+    if conf_path.exists() and conf_path.is_file():
+        yaml_cfg = OmegaConf.load(args.cfg)
+        cfg = OmegaConf.merge(cfg, yaml_cfg)
+
+    cli_cfg = OmegaConf.from_cli(remaining)
+    cfg = OmegaConf.merge(cfg, cli_cfg)
+    return OmegaConf.to_object(cfg)
 
 
-cfg_path = "config.yaml" if len(sys.argv) <= 1 else sys.argv[1]
-cfg_path = "config.yaml" if not cfg_path else cfg_path  # check full null value.
-cfg = load_config(cfg_path)
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--cfg", default="config.yaml", type=str, help="Path to YAML config file"
+)
+args, remaining = parser.parse_known_args()
+
+cfg = load_config(args.cfg)

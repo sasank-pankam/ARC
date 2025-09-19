@@ -1,4 +1,5 @@
 from src.message_queue import BaseMessageQueue
+import traceback
 from . import log, BaseIngress
 from aiohttp import web
 
@@ -27,12 +28,21 @@ class HTTPIngress(BaseIngress):
     async def receive_alerts(self, request: web.Request):
         try:
             alerts = await request.json()
-        except Exception:
-            return web.Response(status=400)
+        except Exception as e:
+            log.error(
+                "Http large payload cannot handle split the alerts.",
+                extra={
+                    "error": e,
+                    "stack_trace": traceback.extract_tb(e.__traceback__),
+                },
+            )
+            return web.json_response({"message": str(e)}, status=400)
 
-        self.mq.put_nowait(convert_to_alerts(alerts))
+        alerts = convert_to_alerts(alerts)
+        log.debug(f"alerts are put to message queue lenght={len(alerts)}")
+        self.mq.put_nowait(alerts)
 
-        return web.Response(status=200)
+        return web.json_response({"processing": True}, status=200)
 
     async def stop(self):
         await self.site.stop()

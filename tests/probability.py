@@ -415,10 +415,7 @@ class TestNotifier(BaseNotifier):
 
     async def notify(self, alertg: AlertGroup):
         root = alertg.root
-        # print("--------> : ", alertg.root.id)
-        # print("--------> : ", alertg.group)
         if root.id not in self.to_raise:
-            # print(self.to_raise)
             log.critical("A false prediction.")
         else:
             log.info(f"found an alert with needed root `{alertg.root}`")

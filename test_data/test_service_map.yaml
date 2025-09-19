@@ -1,29 +1,51 @@
 nodes:
   - id: 1
-    service: user-service
-    children: [4, 5, 7]
+    service: auth-service
+    children: [2]
     parents: []
+
   - id: 2
-    service: product-catalog-service
-    children: [3, 7]
-    parents: []
+    service: catalog-service
+    children: [3]
+    parents: [1]
+
   - id: 3
     service: inventory-service
-    children: [4, 6, 7]
+    children: [4]
     parents: [2]
+
   - id: 4
     service: order-service
-    children: [5, 6, 7]
-    parents: [1, 3]
+    children: [5]
+    parents: [3]
+
   - id: 5
     service: payment-service
     children: []
-    parents: [4, 1]
+    parents: [4]
+
+  # Isolated services
   - id: 6
-    service: shipping-service
+    service: analytics-service
     children: []
-    parents: [4, 3]
+    parents: []
+
   - id: 7
-    service: recommendation-service
+    service: email-service
     children: []
-    parents: [1, 2, 3, 4]
+    parents: []
+
+  - id: 8
+    service: chatbot-service
+    children: []
+    parents: []
+
+  - id: 9
+    service: logging-service
+    children: []
+    parents: []
+
+  - id: 10
+    service: monitoring-service
+    children: []
+    parents: []

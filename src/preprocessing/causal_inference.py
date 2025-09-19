@@ -9,18 +9,19 @@ import random
 from src.models import Alert
 from src.storage import BaseAlertStore
 from src.config import cfg
+from datetime import timedelta
+
+td = timedelta(minutes=cfg.detector.time_delta)
 
 
-def is_temporally_valid(
-    parent_alert, child_alert, delta=cfg.detector.time_delta
-) -> bool:
+def is_temporally_valid(parent_alert, child_alert, delta=td) -> bool:
     return (
         parent_alert.startsAt <= child_alert.startsAt <= parent_alert.startsAt + delta
     )
 
 
 def batch_alerts(
-    alerts: List[Alert], gap_threshold=cfg.detector.batch_gap_threshold
+    alerts: List[Alert], gap_threshold=timedelta(cfg.detector.batch_gap_threshold)
 ) -> List[List[Alert]]:
     alerts = sorted(alerts, key=lambda a: a.startsAt)
     batches = []
@@ -73,13 +74,12 @@ def normalize_batches(batches: List[List[Alert]]) -> List[List[Alert]]:
             s = instances
             # s = random.choices(instances, k=target_count)
             normalized_batches.extend(s)
-        # print(len(s))
 
     return normalized_batches
 
 
 def process_batch(
-    batch: List[Alert], graph, delta=cfg.detector.time_delta
+    batch: List[Alert], graph, delta=td
 ) -> Dict[Tuple[str, str], List[int]]:
     links = defaultdict(lambda: [cfg.detector.initial_alpha, cfg.detector.initial_beta])
     service_to_alerts = defaultdict(list)
@@ -103,7 +103,7 @@ def process_batch(
         a.remove(alert)
         recent_alert: Alert = max(a, key=lambda x: x.startsAt, default=None)
 
-        if recent_alert is None:
+        if recent_alert is None or recent_alert.id == alert.id:
             continue
 
         key = (recent_alert.id, alert.id)
@@ -117,8 +117,6 @@ def process_batch(
         #     sorted_parents = sorted(
         #         parent_alerts, key=lambda x: x.startsAt, reverse=True
         #     )
-        #     print(parent_alerts)
-        #     print(sorted_parents)
         #     for parent_alert in sorted_parents:
         #         if parent_alert.id == alert.id:
         #             continue
@@ -143,8 +141,10 @@ async def compute_alpha_beta_links(
         lambda: [cfg.detector.initial_alpha, cfg.detector.initial_beta]
     )
 
-    print("Total batches: ", len(batches))
+    print("***************  Preprocessing Info  **************")
+    print("Total batches     : ", len(batches))
     print("Normalised batches: ", len(normalized_batches))
+    print("***************************************************")
 
     for batch in normalized_batches:
         batch_links = process_batch(batch, graph)

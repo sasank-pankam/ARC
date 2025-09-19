@@ -1,3 +1,13 @@
+1. http ingress web 400 hadle the exception, give out error. (done)
+2. split the payload in the sender into multiple chunks and process the data. (done)
+3. log links to a files also. (done)
+
+- required changes.
+        1. skip preprocessing if path not found. (done)
+        2. json -> csv. (done)
+        3. config based logging. (done)
+
+
 1. todos for production:
     - cancellation (ctrl + c) - done
     - deleting a graph if resolved - done(backend, frontend)

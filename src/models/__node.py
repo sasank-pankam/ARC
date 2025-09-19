@@ -22,8 +22,7 @@ class GraphNode:
 
     @classmethod
     def get_id(cls, service):
-        # print(cls.srevice_to_id)
-        return cls.srevice_to_id[service]
+        return cls.srevice_to_id.get(service, -1)
 
     def __repr__(self):
         return str(self.id)

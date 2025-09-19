@@ -6,10 +6,12 @@ from collections import defaultdict
 from pathlib import Path
 import datetime as dt
 
+import uuid
+
 # === CONFIG ===
 NUM_DAYS = 500
 MIN_SCENARIOS_PER_DAY = 1
-MAX_SCENARIOS_PER_DAY = 6
+MAX_SCENARIOS_PER_DAY = 3
 SCENARIO_GAP_RANGE_MINUTES = (20, 30)
 ALERT_GAP_RANGE_SECONDS = (30, 50)
 ALERT_DURATION_MINUTES = 3
@@ -19,45 +21,75 @@ NOISE_DAY_PERCENT = 0.4
 
 # === FIXED SCENARIOS ===
 SCENARIOS = [
-    ["2.2", "3.2", "4.1"],
-    ["1.1", "4.2", "5.1"],
-    ["2.1", "3.2", "4.1", "5.1"],
-    ["1.2", "4.1", "6.1", "6.2"],
-    ["2.1", "3.1", "4.2", "7.2"],
-    ["1.1", "4.1", "5.1", "4.2", "7.1"],
-    ["2.2", "3.2", "4.1", "4.2", "7.1", "7.2"],
+    ["1.1", "2.1", "3.1", "4.1", "5.1"],
 ]
 
 # === ALERT METADATA ===
 alert_metadata = {
-    "1.1": {"service": "user-service", "desc": "Auth failure spike"},
-    "1.2": {"service": "user-service", "desc": "Session latency high"},
-    "2.1": {"service": "product-catalog-service", "desc": "Metadata sync delay"},
-    "2.2": {"service": "product-catalog-service", "desc": "Read error surge"},
-    "3.1": {"service": "inventory-service", "desc": "Stock consistency warning"},
-    "3.2": {"service": "inventory-service", "desc": "Update failure increase"},
-    "4.1": {"service": "order-service", "desc": "Order backlog risk"},
-    "4.2": {"service": "order-service", "desc": "Validation error surge"},
-    "5.1": {"service": "payment-service", "desc": "Gateway timeout spike"},
-    "5.2": {"service": "payment-service", "desc": "High retry rate"},
-    "6.1": {"service": "shipping-service", "desc": "Shipping delay warning"},
-    "6.2": {"service": "shipping-service", "desc": "Carrier API failure surge"},
-    "7.1": {
-        "service": "recommendation-service",
-        "desc": "Recommendation latency warning",
+    "1.1": {
+        "service": "auth-service",
+        "desc": "Login spike",
+        "summary": "Sudden surge in login attempts",
     },
-    "7.2": {"service": "recommendation-service", "desc": "Recommendation model errors"},
+    "2.1": {
+        "service": "catalog-service",
+        "desc": "Catalog sync issue",
+        "summary": "Product catalog synchronization delay",
+    },
+    "3.1": {
+        "service": "inventory-service",
+        "desc": "Inventory mismatch",
+        "summary": "Inventory records inconsistent across nodes",
+    },
+    "4.1": {
+        "service": "order-service",
+        "desc": "Order queue delay",
+        "summary": "Order processing backlog increasing",
+    },
+    "5.1": {
+        "service": "payment-service",
+        "desc": "Payment timeout",
+        "summary": "Payment gateway timeouts exceeding threshold",
+    },
+    "6.1": {
+        "service": "analytics-service",
+        "desc": "High report generation latency",
+        "summary": "Analytics reports taking too long to generate",
+    },
+    "7.1": {
+        "service": "email-service",
+        "desc": "Email delivery drop",
+        "summary": "Decrease in successful outbound email delivery",
+    },
+    "8.1": {
+        "service": "chatbot-service",
+        "desc": "Response mismatch detected",
+        "summary": "Chatbot returning inconsistent or incorrect responses",
+    },
+    "9.1": {
+        "service": "logging-service",
+        "desc": "Log ingestion failure",
+        "summary": "System logs failing to reach ingestion pipeline",
+    },
+    "10.1": {
+        "service": "monitoring-service",
+        "desc": "Anomaly detector crash",
+        "summary": "Anomaly detection module crashed unexpectedly",
+    },
 }
 
 # === SERVICE GRAPH ===
 service_graph = {
-    "1": {"parents": [], "children": ["4", "5", "7"]},
-    "2": {"parents": [], "children": ["3", "7"]},
-    "3": {"parents": ["2"], "children": ["4", "6", "7"]},
-    "4": {"parents": ["1", "3"], "children": ["5", "6", "7"]},
-    "5": {"parents": ["4", "1"], "children": []},
-    "6": {"parents": ["4", "3"], "children": []},
-    "7": {"parents": ["1", "2", "3", "4"], "children": []},
+    "1": {"parents": [], "children": ["2"]},
+    "2": {"parents": ["1"], "children": ["3"]},
+    "3": {"parents": ["2"], "children": ["4"]},
+    "4": {"parents": ["3"], "children": ["5"]},
+    "5": {"parents": ["4"], "children": []},
+    "6": {"parents": [], "children": []},
+    "7": {"parents": [], "children": []},
+    "8": {"parents": [], "children": []},
+    "9": {"parents": [], "children": []},
+    "10": {"parents": [], "children": []},
 }
 
 
@@ -65,20 +97,15 @@ def create_alert(alert_id, start_time):
     meta = alert_metadata[alert_id]
     service_id = alert_id.split(".")[1]
     end_time = start_time + timedelta(minutes=ALERT_DURATION_MINUTES)
-    fmt = "%Y-%m-%dT%H:%M:%S"
+    fmt = "%b %d, %Y, %I:%M:%S %p"
     return {
-        "labels": {
-            "job": meta["service"],
-            "instance": service_id,
-            "severity": "critical",
-        },
-        "startsAt": start_time.strftime(fmt),
-        "endsAt": end_time.strftime(fmt),
-        "status": "firing",
-        "annotations": {
-            "description": meta["desc"],
-            "summary": f"{meta['service']} experienced '{meta['desc']}'",
-        },
+        "Id": str(uuid.uuid4()),
+        "Current State": "critical",
+        "Resource Name": meta["service"],
+        "Created Time": start_time.strftime(fmt),
+        "End Date": "09-10-2025",
+        "Metric": meta["desc"],
+        "Subject": meta["summary"],
     }
 
 
@@ -86,7 +113,7 @@ def generate_day_alerts(day_index, base_date):
     alerts = []
     involved_services = set()
     scenario_count = random.randint(MIN_SCENARIOS_PER_DAY, MAX_SCENARIOS_PER_DAY)
-    scenario_pool = random.sample(SCENARIOS, k=scenario_count)
+    scenario_pool = random.choices(SCENARIOS, k=scenario_count)
     current_time = base_date.replace(hour=0, minute=0, second=0) + timedelta(
         minutes=random.randint(0, 60)
     )
@@ -193,10 +220,9 @@ def main():
     # === Step 4: Type 2 noise (independent scenarios)
     independent_inserted = 0
     fake_scenarios = [
-        ["5.2", "6.1"],
-        ["1.2", "5.2", "6.2"],
-        ["2.1", "6.1"],
-        ["3.1", "5.2", "7.1"],
+        ["2.1", "4.1"],
+        ["3.1", "5.1"],
+        ["1.1", "3.1"],
     ]
     while independent_inserted < (total_noise_alerts - half):
         unused = allowed_noise_days - used_noise_days
